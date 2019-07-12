@@ -1,5 +1,6 @@
 package com.example.abrahamarreola.facebooklogin;
 
+import android.app.ProgressDialog;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -7,14 +8,13 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
-import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -22,16 +22,12 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 public class LoginScreen extends AppCompatActivity {
 
+    LinearLayout mainLayout;
     TextInputLayout emailLayout, passLayout;
     TextInputEditText emailInput, passInput;
     Button submitButton;
@@ -41,12 +37,12 @@ public class LoginScreen extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_screen);
 
+        mainLayout = (LinearLayout)findViewById(R.id.main_layout);
         emailLayout = (TextInputLayout) findViewById(R.id.email_layout);
         emailInput = (TextInputEditText)findViewById(R.id.email_input);
         passLayout = (TextInputLayout) findViewById(R.id.password_layout);
         passInput = (TextInputEditText)findViewById(R.id.password_input);
         submitButton = (Button) findViewById(R.id.login_button);
-
 
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -66,6 +62,9 @@ public class LoginScreen extends AppCompatActivity {
                 }
 
                 if(loginProcedure) login(email, password);
+
+                InputMethodManager imm = (InputMethodManager)getSystemService(getBaseContext().INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(mainLayout.getWindowToken(), 0);
             }
         });
 
@@ -95,18 +94,22 @@ public class LoginScreen extends AppCompatActivity {
     }
 
     private void login(final String email, final String password){
-        final String url = "http://192.168.100.2:8000/login_facebook_app";
+        final ProgressDialog dialog = new ProgressDialog(this);
+        final String url = "http://localhost:8000/login_facebook_app";
+
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
         StringRequest postRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 Toast.makeText(getBaseContext(), response, Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Toast.makeText(getBaseContext(), error.toString(), Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
             }
         }){
             @Override
@@ -118,7 +121,10 @@ public class LoginScreen extends AppCompatActivity {
                 return params;
             }
         };
-
         requestQueue.add(postRequest);
+        dialog.setMessage("Logging in...");
+        dialog.setCancelable(false);
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.show();
     }
 }
