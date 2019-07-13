@@ -1,8 +1,10 @@
 package com.example.abrahamarreola.facebooklogin;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -19,9 +21,16 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -96,14 +105,36 @@ public class LoginScreen extends AppCompatActivity {
     private void login(final String email, final String password){
         final ProgressDialog dialog = new ProgressDialog(this);
         final String url = "http://localhost:8000/login_facebook_app";
-
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
         StringRequest postRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                Toast.makeText(getBaseContext(), response, Toast.LENGTH_SHORT).show();
+                Map<String, Object> name = null;
                 dialog.dismiss();
+
+                try {
+                    name = new ObjectMapper().readValue(response, HashMap.class);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                AlertDialog.Builder dialogoExito = new AlertDialog.Builder(LoginScreen.this);
+                dialogoExito.setCancelable(true);
+                dialogoExito.setPositiveButton("Ok",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        });
+                if(!name.isEmpty()){
+                    dialogoExito.setMessage("Welcome " + name.get("name").toString());
+                    dialogoExito.setTitle("Logged in");
+                }
+                else{
+                    dialogoExito.setMessage("There is not such username or password!");
+                    dialogoExito.setTitle("ERROR");
+                }
+                dialogoExito.create().show();
             }
         }, new Response.ErrorListener() {
             @Override
@@ -121,6 +152,7 @@ public class LoginScreen extends AppCompatActivity {
                 return params;
             }
         };
+
         requestQueue.add(postRequest);
         dialog.setMessage("Logging in...");
         dialog.setCancelable(false);
